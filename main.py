@@ -1,55 +1,41 @@
+from PyQt5 import QtCore
+from PyQt5.QtCore import QPoint, QRect
+from PyQt5.QtGui import QBrush, QPainter, QColor, QPaintEvent, QResizeEvent
+from PyQt5.QtWidgets import QMainWindow, QApplication, QGridLayout
+
+from dtype.global_storage import raw, GlobalStorage
+from dtype.input_widget import InputWidget
 import sys
 
-from PyQt5.QtWidgets import QApplication, QLabel, QTextEdit, QPushButton, QVBoxLayout, QWidget, QFileDialog, \
-    QGridLayout, QSizePolicy
-from PyQt5.QtGui import QPixmap
-from PyQt5 import QtCore, QtWidgets
-from PyQt5.QtGui import QCursor
-from PyQt5.uic.properties import QtGui
-from PyQt5.Qt import Qt
-from string import punctuation
 
-
-class MainWindow(QWidget):
+class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        # Widgets
-        self.label = QLabel(text="Hi")
-        self.label.setStyleSheet("font-size: 20px;")
-        self.label.setWordWrap(True)
-        self.label.setAlignment(QtCore.Qt.AlignCenter)
-
-        # Overlay
-        self.label2 = QLabel(text="Hi")
-        self.label2.setStyleSheet("font-size: 20px;")
-        self.label2.setWordWrap(True)
-        self.label2.setAlignment(QtCore.Qt.AlignCenter)
-
-        # Layout
+        self.title = "dtype"
+        self.InitWindow()
         self.layout = QGridLayout()
-        self.layout.addWidget(self.label, 0, 0)
-        self.layout.addWidget(self.label2, 0, 0)
-        self.layout.setContentsMargins(5, 5, 5, 5)
-        self.layout.setSpacing(5)
-
+        self.input = InputWidget(self, 800, line_count=7, scroll_margin=2)
+        self.layout.addWidget(self.input, 1000, 1000)
         self.setLayout(self.layout)
 
-        self.setLayout(self.layout)
+    def resizeEvent(self, a0: QResizeEvent) -> None:
+        self.input.move(self.rect().center() - self.input.rect().center())
+
+    def onFinishedText(self):
+        pass
+
+    def InitWindow(self):
+        self.resize(1440, 1000)
+        self.setWindowTitle(self.title)
+        self.setGeometry(300, 300, 1440, 1000)
+
+    # def paintEvent(self, a0: QPaintEvent) -> None:
+    #     self.input.paintEvent(a0)
 
     def keyPressEvent(self, event):
-        # modifiers = QtWidgets.QApplication.keyboardModifiers()
-        # if modifiers == QtCore.Qt.ShiftModifier:
-        #     print('Shift+Click')
-        if event.key() == Qt.Key_Backspace:
-            if event.modifiers() & Qt.ControlModifier:
-                self.label.setText(" ".join(self.label.text().split(" ")[:-1]))
-            else:
-                self.label.setText(self.label.text()[:-1])
-        else:
-            print(punctuation)
-            text = event.text()
-            if text.isalpha() or text in set(r" !\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~"):
-                self.label.setText(self.label.text() + event.text())
+        self.input.keyPressEvent(event)
+        # print('pressed from MainWindow: ', event.key())
+        # self.keyPressed.emit(event)
 
 
 if __name__ == '__main__':
