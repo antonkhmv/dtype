@@ -79,21 +79,22 @@ class Results(QWidget):
         self.box = QVBoxLayout()
         self.box.setSizeConstraint(QLayout.SetFixedSize)
         self.info = QLabel(f"Всего слов: {num_words-num_word_errors} <br>"
-                           f"Ошибок: {num_errors} / {num_chars} <br>"
+                           f"Ошибок в символах: {num_errors} / {num_chars} символов <br>"
+                           f"Ошибок в словах: {num_word_errors} / {num_words} слов <br>"
                            f"Скорость печати: {round(calc_speed(elapsed, num_chars, num_errors)*60)} символов/минуту <br>"
-                           f"Точность: {round((1 - num_errors / num_chars) * 100)}%")
+                           f"Точность: {round((1 - num_word_errors / num_words) * 100)}%")
 
         self.box.addWidget(self.info)
-        self.info.setFixedSize(400, 500)
+        self.info.setFixedSize(400, 250)
 
         GlobalStorage.add_stylesheet_listener(self.info, ["primary_color", "results_font-size"])
-        self.back = QPushButton("Back to main menu")
+        self.back = QPushButton("Назад в главное меню")
 
         # noinspection PyUnresolvedReferences
         self.back.clicked.connect(self.parent.on_finished_results)
         self.box.addWidget(self.back)
 
-        self.again = QPushButton("Try again")
+        self.again = QPushButton("Начать сначала")
         self.box.addWidget(self.again)
 
         for button in [self.back, self.again]:

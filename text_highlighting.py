@@ -29,10 +29,11 @@ class HighlightedQLabel(QLabel):
         self.current_line = 0
 
     def get_space_length(self):
-        if sys.platform == 'win32':
-            return int(int(GlobalStorage.get("input_font-size").rstrip("px")) * 0.27)
-        elif sys.platform == 'darwin':
-            return int(int(GlobalStorage.get("input_font-size").rstrip("px")) * 0.25)
+        return int(int(GlobalStorage.get("input_font-size").rstrip("px")) * 0.27)
+        # if sys.platform == 'win32':
+        #     return int(int(GlobalStorage.get("input_font-size").rstrip("px")) * 0.27)
+        # elif sys.platform == 'darwin':
+        #     return int(int(GlobalStorage.get("input_font-size").rstrip("px")) * 0.27)
 
     def add_new_word(self, word):
         self.words.append(word)
@@ -114,7 +115,8 @@ class HighlightedQLabel(QLabel):
         return result
 
     def update_text(self):
-        space_size = self.get_space_length() #int(int(GlobalStorage.get("input_font-size").rstrip("px")) * 0.25)
+        # странная проблема с длиной пробела - всего 1 px вместо 7
+        space_size = self.get_space_length()
         result = []
         last_str = []
         breaks = self.get_word_breaks()

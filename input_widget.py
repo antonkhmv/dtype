@@ -36,7 +36,7 @@ class InputWidget(QWidget):
             self.setPalette(p)
             self.setAutoFillBackground(True)
 
-        GlobalStorage.add_listener(["secondary_color"], update_background)
+        # GlobalStorage.add_listener(["secondary_color"], update_background)
 
         def update_params(font_size, cursor_color):
             font_size = int(font_size.rstrip("px"))
@@ -47,12 +47,12 @@ class InputWidget(QWidget):
         GlobalStorage.add_listener(["input_font-size", "cursor_color"], update_params)
 
         self.true_words = true_words
-        self.true_words = "over the sunset at the edge of the atlas i'm driving alone when".split()
-                          # " i see in the distance a light in the dark" \
-                          # " and when i approach it a note on the glass we're serving" \
-                          # " inside it's quiet but the tables are shining with blue chrome" \
-                          # " and white with a fan on above but no service in sight" \
-                          # " i pick out a booth sliding in from the side" \
+        self.true_words = "over the sunset at the edge of the atlas i'm driving alone when" \
+                          " i see in the distance a light in the dark" \
+                          " and when i approach it a note on the glass we're serving" \
+                          " inside it's quiet but the tables are shining with blue chrome" \
+                          " and white with a fan on above but no service in sight" \
+                          " i pick out a booth sliding in from the side".split()
                           # " and then i back feeling quite tired so i know that i'll be here a little" \
                           # " while when i go i'll get right back on the road" \
                           # " let everybody come together the world at peace as one we could live a dream forever" \
@@ -153,10 +153,10 @@ class InputWidget(QWidget):
 
     def get_metrics(self):
         num_words = len(self.label.words)
-        num_words_with_errors = len(self.label.word_highlights)
+        num_words_with_errors = len(list(filter(lambda x: len(x) > 0, self.label.word_highlights.values())))
         num_errors = sum(sum(end-start for (start, end, _) in highlight)
                          for highlight in self.label.word_highlights.values())
-        num_chars = len("".join(self.label.words))
+        num_chars = len(" ".join(self.label.words))
         elapsed = time() - self.time
         return elapsed, num_words, num_words_with_errors, num_chars, num_errors
 
@@ -213,4 +213,3 @@ class InputWidget(QWidget):
         self.label.update()
         self.is_cursor_active = True
         self.update()
-        #self.label.move(QPoint(0, self.label.scroll_pos * self.line_height))

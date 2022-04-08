@@ -11,6 +11,7 @@ from windows import MainMenu, Results
 class ContentView(QStackedWidget):
     def __init__(self):
         super().__init__()
+        self.results = None
         self.title = "dtype"
         self.init_window()
         self.main_menu = MainMenu(self)
@@ -32,12 +33,13 @@ class ContentView(QStackedWidget):
 
     def on_finished_test(self, test_page):
         self.removeWidget(test_page)
-        results = Results(self, *test_page.get_metrics())
-        self.addWidget(results)
-        self.setCurrentWidget(results)
+        self.results = Results(self, *test_page.get_metrics())
+        self.addWidget(self.results)
+        self.setCurrentWidget(self.results)
 
-    def on_finished_results(self, results):
-        self.removeWidget(results)
+    def on_finished_results(self):
+        self.results.back.clicked.disconnect(self.on_finished_results)
+        self.removeWidget(self.results)
         self.setCurrentWidget(self.main_menu)
 
     def init_window(self):

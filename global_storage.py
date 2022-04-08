@@ -9,16 +9,16 @@ from typing import Callable, Any, List
 class GlobalStorage:
     __data = {
         # General
-        "primary_color":    "blue",
-        "secondary_color":  "#9c6773",
-        "placeholder_color": "#97d2d9",
+        "primary_color": "#FFFFFF",
+        "secondary_color": "#323232",
+        "placeholder_color": "#808080",
         "input_font-family": "Arial",
-        "buttons_background-color": "gray",
+        "buttons_background-color": "#a9a9a9",
 
         # InputWidget
-        "cursor_color": "#66fb48",
-        "error_color": "green",
-        "blank_color": "#eab726",
+        "cursor_color": "#a9a9a9",
+        "error_color": "#ff3333",
+        "blank_color": "#bf9494",
         "input_font-size": "30px",
         "logo_font-size": "50px",
         "results_font-size": "20px"
@@ -42,6 +42,7 @@ class GlobalStorage:
         def update_attr(*values):
             style = " ".join([f"{name.partition('_')[2]}: {value};" for name, value in zip(styles, values)])
             getattr(obj, 'setStyleSheet')(style)
+
         cls.add_listener(styles, update_attr)
 
     @classmethod
@@ -51,6 +52,7 @@ class GlobalStorage:
         def update_attr(*values):
             for name, value in zip(styles, values):
                 dct[name] = value
+
         cls.add_listener(styles, update_attr)
 
     @classmethod
