@@ -54,7 +54,7 @@ class WordsMode(InputWidget):
     def update_stats(self):
         elapsed, num_word, num_word_errors, num_chars, num_errors = self.get_metrics()
         # self.label_pos = self.label.pos()
-        self.stats.setText(f"Времени с начала: {round(elapsed)}c. <br>"
+        self.stats.setText(f"Времени с начала: {round(elapsed)}c <br>"
                            f"Скорость: {round(calc_speed(elapsed, num_chars, num_errors) * 60)} сим/с")
 
     def start_timer(self):

@@ -25,7 +25,7 @@ class InputWidget(QWidget):
             self.setPalette(p)
             self.setAutoFillBackground(True)
 
-        # GlobalStorage.add_listener(["secondary_color"], update_background)
+        GlobalStorage.add_listener(["secondary_color"], update_background)
 
         def update_params(font_size, cursor_color):
             font_size = int(font_size.rstrip("px"))
