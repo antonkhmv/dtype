@@ -30,6 +30,14 @@ class InputWidget(QWidget):
         self.font_size = None
         self.cursor_color = None
 
+        def update_background(value):
+            p = self.palette()
+            p.setColor(self.backgroundRole(), QColor(value))
+            self.setPalette(p)
+            self.setAutoFillBackground(True)
+
+        GlobalStorage.add_listener(["secondary_color"], update_background)
+
         def update_params(font_size, cursor_color):
             font_size = int(font_size.rstrip("px"))
             self.line_height = 1.2 * font_size
@@ -39,21 +47,21 @@ class InputWidget(QWidget):
         GlobalStorage.add_listener(["input_font-size", "cursor_color"], update_params)
 
         self.true_words = true_words
-        self.true_words = "over the sunset at the edge of the atlas i'm driving alone when" \
-                          " i see in the distance a light in the dark" \
-                          " and when i approach it a note on the glass we're serving" \
-                          " inside it's quiet but the tables are shining with blue chrome" \
-                          " and white with a fan on above but no service in sight" \
-                          " i pick out a booth sliding in from the side" \
-                          " and then i start feeling quite tired so i know that i'll be here a little" \
-                          " while when i go i'll get right back on the road" \
-                          " let everybody come together the world at peace as one we could live a dream forever" \
-                          " its really up to us and if you're not sure how to start then open up " \
-                          " you heart let the feeling grow and soon you're sure to know light up light up" \
-                          " the whole night sky with all your love just say the prayer we'll make it there if we" \
-                          " work hard enough keep on keep on and give it everything you've got 'cos only then we'll" \
-                          " reach the end the land where we belong so when we walk among the clouds hold your neighbor" \
-                          " close as the trumpets echo round you don't wanna be a-".split()
+        self.true_words = "over the sunset at the edge of the atlas i'm driving alone when".split()
+                          # " i see in the distance a light in the dark" \
+                          # " and when i approach it a note on the glass we're serving" \
+                          # " inside it's quiet but the tables are shining with blue chrome" \
+                          # " and white with a fan on above but no service in sight" \
+                          # " i pick out a booth sliding in from the side" \
+                          # " and then i back feeling quite tired so i know that i'll be here a little" \
+                          # " while when i go i'll get right back on the road" \
+                          # " let everybody come together the world at peace as one we could live a dream forever" \
+                          # " its really up to us and if you're not sure how to back then open up " \
+                          # " you heart let the feeling grow and soon you're sure to know light up light up" \
+                          # " the whole night sky with all your love just say the prayer we'll make it there if we" \
+                          # " work hard enough keep on keep on and give it everything you've got 'cos only then we'll" \
+                          # " reach the end the land where we belong so when we walk among the clouds hold your neighbor" \
+                          # " close as the trumpets echo round you don't wanna be a-".split()
 
         self.words_expected = copy.copy(self.true_words)
 
@@ -62,14 +70,15 @@ class InputWidget(QWidget):
         self.label = HighlightedQLabel(self, exp_words=self.words_expected, max_width=width, line_count=line_count,
                                        scroll_margin=scroll_margin)
 
-        GlobalStorage.add_stylesheet_listener(self.label, ["input_font-size"])
+        GlobalStorage.add_stylesheet_listener(self.label, ["input_font-size", "primary_color", "input_font-family"])
         self.label.setAlignment(Qt.AlignLeft)
 
         # Overlay
         self.placeholder = QLabel(text=" ".join(self.words_expected))
         self.placeholder.lineWidth()
 
-        GlobalStorage.add_stylesheet_listener(self.placeholder, ["placeholder_color", "input_font-size"])
+        GlobalStorage.add_stylesheet_listener(self.placeholder,
+                                              ["placeholder_color", "input_font-size", "input_font-family"])
 
         # self.placeholder.setWordWrap(True)
         self.placeholder.setAlignment(Qt.AlignLeft)
@@ -101,6 +110,7 @@ class InputWidget(QWidget):
             pass
 
         self.stats_update = QTimer(self)
+        # noinspection PyUnresolvedReferences
         self.stats_update.timeout.connect(update_stats)
         self.stats_update.start(100)
         self.time = time()
@@ -140,9 +150,6 @@ class InputWidget(QWidget):
         breaks = self.label.get_word_breaks()
         breaks = " ".join(breaks)
         self.placeholder.setText("<br>".join(breaks.split("<br>")[self.label.scroll_pos:]))
-
-    def calc_speed(self, elapsed, num_entries, num_errors):
-        return (num_entries - num_errors) / (elapsed + 1e-5)
 
     def get_metrics(self):
         num_words = len(self.label.words)

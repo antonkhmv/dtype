@@ -2,7 +2,7 @@ from collections import defaultdict
 from html import escape
 
 from PyQt5.QtWidgets import QLabel
-
+import sys
 from global_storage import GlobalStorage
 
 
@@ -27,6 +27,12 @@ class HighlightedQLabel(QLabel):
         self.scroll_pos = 0
         self.cursor_pos = 0
         self.current_line = 0
+
+    def get_space_length(self):
+        if sys.platform == 'win32':
+            return int(int(GlobalStorage.get("input_font-size").rstrip("px")) * 0.27)
+        elif sys.platform == 'darwin':
+            return int(int(GlobalStorage.get("input_font-size").rstrip("px")) * 0.25)
 
     def add_new_word(self, word):
         self.words.append(word)
@@ -94,7 +100,7 @@ class HighlightedQLabel(QLabel):
 
     def get_word_breaks(self):
         result = []
-        space_size = int(int(GlobalStorage.get("input_font-size").rstrip("px")) * 0.25)
+        space_size = self.get_space_length()
         string = ""
         i = 0
         for word in self.exp_words:
@@ -108,7 +114,7 @@ class HighlightedQLabel(QLabel):
         return result
 
     def update_text(self):
-        space_size = int(int(GlobalStorage.get("input_font-size").rstrip("px")) * 0.25)
+        space_size = self.get_space_length() #int(int(GlobalStorage.get("input_font-size").rstrip("px")) * 0.25)
         result = []
         last_str = []
         breaks = self.get_word_breaks()
@@ -125,10 +131,10 @@ class HighlightedQLabel(QLabel):
                             continue
                         else:
                             self.word_highlights[i][j] = (start, min(end, len(word)), color)
-                    r += word[last_end:start]
+                    r += escape(word[last_end:start])
                     r += f"<font color=\"{self.colors[color]}\">{escape(word[start:end])}</font>"
                     last_end = end
-                r += word[last_end:]
+                r += escape(word[last_end:])
             if exp.startswith("<br>"):
                 r = "<br>" + r
                 last_str = [word]

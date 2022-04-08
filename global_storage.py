@@ -9,15 +9,19 @@ from typing import Callable, Any, List
 class GlobalStorage:
     __data = {
         # General
-        "primary_color":    "#000000",
-        "secondary_color":  "white",
-        "placeholder_color": "gray",
+        "primary_color":    "blue",
+        "secondary_color":  "#9c6773",
+        "placeholder_color": "#97d2d9",
+        "input_font-family": "Arial",
+        "buttons_background-color": "gray",
 
         # InputWidget
-        "cursor_color": "darkgray",
-        "error_color": "#ff3333",
-        "blank_color": "#bf9494",
-        "input_font-size": "30px"
+        "cursor_color": "#66fb48",
+        "error_color": "green",
+        "blank_color": "#eab726",
+        "input_font-size": "30px",
+        "logo_font-size": "50px",
+        "results_font-size": "20px"
     }
 
     __listeners = defaultdict(list)
