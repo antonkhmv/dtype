@@ -1,32 +1,46 @@
 import copy
 import itertools
+from time import time
 
 from PyQt5 import QtCore
 from PyQt5.Qt import Qt
 from PyQt5.QtCore import QTimer, QRect, QPoint
 from PyQt5.QtGui import QPainter, QPen, QPaintEvent, QShowEvent, QBrush, QColor
-from PyQt5.QtWidgets import QLabel, QWidget, QGridLayout
+from PyQt5.QtWidgets import QLabel, QWidget, QGridLayout, QVBoxLayout, QLayout
 
-from dtype.text_highlighting import HighlightedQLabel
-from dtype.global_storage import GlobalStorage, raw
+from text_highlighting import HighlightedQLabel
+from global_storage import GlobalStorage
+
+
+class InputWidgetWrapper(QWidget):
+    def __init__(self, parent, width, line_count, scroll_margin):
+        super().__init__(parent)
+        self.input = InputWidget(self, width, line_count, scroll_margin)
+        self.input.stackUnder(self)
+        layout = QGridLayout()
+        layout.addWidget(self.input)
+        self.setLayout(self.input.box)
 
 
 class InputWidget(QWidget):
-    def __init__(self, parent, width, line_count, scroll_margin):
+    def __init__(self, parent, width, true_words=None, line_count=6, scroll_margin=2):
         super().__init__(parent=parent)
         self.parent = parent
         self.line_height = 0
+        self.font_size = None
+        self.cursor_color = None
 
-        def update_line_height(value):
-            self.line_height = 1.2 * float(raw(value, suffix="px"))
+        def update_params(font_size, cursor_color):
+            font_size = int(font_size.rstrip("px"))
+            self.line_height = 1.2 * font_size
+            self.font_size = font_size
+            self.cursor_color = cursor_color
 
-        GlobalStorage.add_listener("input_font_size", update_line_height)
+        GlobalStorage.add_listener(["input_font-size", "cursor_color"], update_params)
 
-        self.resize(width + 10, line_count * self.line_height + 18)
-        # self.setGeometry(0, 0, width, height)
-
-        self.true_words = "over the sunset at the edge of the atlas i'm driving" \
-                          " alone when i see in the distance a light in the dark" \
+        self.true_words = true_words
+        self.true_words = "over the sunset at the edge of the atlas i'm driving alone when" \
+                          " i see in the distance a light in the dark" \
                           " and when i approach it a note on the glass we're serving" \
                           " inside it's quiet but the tables are shining with blue chrome" \
                           " and white with a fan on above but no service in sight" \
@@ -43,70 +57,101 @@ class InputWidget(QWidget):
 
         self.words_expected = copy.copy(self.true_words)
 
+
         # Widgets
-        self.label = HighlightedQLabel(max_width=width, exp_words=self.words_expected,
-                                       line_count=line_count, scroll_margin=scroll_margin)
-        self.label.setStyleSheet(GlobalStorage.get("input_font_size"))
-        # self.label.setWordWrap(True)
-        self.label.setAlignment(QtCore.Qt.AlignLeft)
+        self.label = HighlightedQLabel(self, exp_words=self.words_expected, max_width=width, line_count=line_count,
+                                       scroll_margin=scroll_margin)
+
+        GlobalStorage.add_stylesheet_listener(self.label, ["input_font-size"])
+        self.label.setAlignment(Qt.AlignLeft)
 
         # Overlay
         self.placeholder = QLabel(text=" ".join(self.words_expected))
         self.placeholder.lineWidth()
 
-        def update_placeholder(value):
-            self.placeholder.setStyleSheet(GlobalStorage.get("placeholder_color")
-                                           + GlobalStorage.get("input_font_size"))
+        GlobalStorage.add_stylesheet_listener(self.placeholder, ["placeholder_color", "input_font-size"])
 
-        GlobalStorage.add_listener("placeholder_color", update_placeholder)
-        GlobalStorage.add_listener("input_font_size", update_placeholder)
         # self.placeholder.setWordWrap(True)
-        self.placeholder.setAlignment(QtCore.Qt.AlignLeft)
-
-        self.timer = QTimer(self)
-        self.is_cursor_active = True
+        self.placeholder.setAlignment(Qt.AlignLeft)
+        self.resize(width, line_count * self.line_height + 18)
+        # Layout
+        self.label_pos = self.label.pos()
+        self.grid = QGridLayout()
+        self.box = QGridLayout()
+        self.box.setSizeConstraint(QLayout.SetFixedSize)
+        self.label.setFixedSize(width, line_count * self.line_height)
+        self.placeholder.setFixedSize(width, line_count * self.line_height)
+        self.box.addWidget(self.placeholder, 0, 0)
+        self.box.addWidget(self.label, 0, 0)
+        self.grid.addLayout(self.box, 0, 0, Qt.AlignCenter)
+        self.setLayout(self.grid)
+        self.show()
 
         def update_cursor():
-            self.is_cursor_active = not self.is_cursor_active
+            self.is_cursor_active = (self.is_cursor_active + 1) % 5
+            self.update()
 
+        self.cursor_timer = QTimer(self)
+        self.is_cursor_active = 0
         # noinspection PyUnresolvedReferences
-        self.timer.timeout.connect(update_cursor)
-        self.timer.start(500)
+        self.cursor_timer.timeout.connect(update_cursor)
+        self.cursor_timer.start(300)
 
-        # Layout
-        self.layout = QGridLayout()
-        self.layout.addWidget(self.placeholder, 0, 0)
-        self.layout.addWidget(self.label, 0, 0)
-        self.setLayout(self.layout)
+        def update_stats():
+            pass
+
+        self.stats_update = QTimer(self)
+        self.stats_update.timeout.connect(update_stats)
+        self.stats_update.start(100)
+        self.time = time()
 
     def paintEvent(self, a0: QPaintEvent) -> None:
         pt = QPainter(self)
-        cl = raw(GlobalStorage.get("primary_color"))
-        fs = raw(GlobalStorage.get("input_font_size"), suffix="px")
-        pt.setBrush(QColor(cl))
-        tm, lm = 12, 8
-        pt.drawRect(QRect(QPoint(self.label.cursor_pos + lm, self.label.current_line * self.line_height + tm),
-                          QPoint(self.label.cursor_pos + lm + 1, self.label.current_line * self.line_height + int(fs) + tm)))
-        self.update()
+        cl = QColor(self.cursor_color)
+        pen = QPen()
+        brush = QBrush(cl)
+        pen.setBrush(brush)
+        pt.setBrush(brush)
+        pt.setPen(pen)
+        # pt.setBackgroundMode(Qt.BGMode.OpaqueMode)
+        pt.setBackground(QColor(self.cursor_color))
+        tm, lm = self.label_pos.y() + self.line_height/10, self.label_pos.x()-2
+        label = self.label
+        if self.is_cursor_active < 3:
+            pt.drawRect(QRect(QPoint(label.cursor_pos + lm, (label.current_line-label.scroll_pos) * self.line_height + tm),
+                              QPoint(label.cursor_pos + lm + 1,
+                                     (label.current_line-label.scroll_pos) * self.line_height + self.font_size + tm)))
 
     def showEvent(self, a0: QShowEvent) -> None:
-        self.updatePlaceholder()
+        self.update_placeholder()
+        self.label_pos = self.label.pos()
+        # self.parent.resizeEvent(None)
 
     @staticmethod
     def common_prefix(word, word_expected):
         return sum(itertools.takewhile(lambda y: y, [x[0] == x[1] for x in zip(word, word_expected)]))
 
-    def updatePlaceholder(self):
+    def update_placeholder(self):
         last_ind = len(self.label.words) - 1
         if last_ind >= 0:
             real = self.label.words[last_ind]
             true = self.true_words[last_ind]
             self.words_expected[last_ind] = real + true[len(real):]
         breaks = self.label.get_word_breaks()
-        placeholder = ""
-        for i, word in enumerate(self.words_expected):
-            placeholder += (" " * (i > 0)) + ("<br>" * breaks[i]) + word
-        self.placeholder.setText(placeholder)
+        breaks = " ".join(breaks)
+        self.placeholder.setText("<br>".join(breaks.split("<br>")[self.label.scroll_pos:]))
+
+    def calc_speed(self, elapsed, num_entries, num_errors):
+        return (num_entries - num_errors) / (elapsed + 1e-5)
+
+    def get_metrics(self):
+        num_words = len(self.label.words)
+        num_words_with_errors = len(self.label.word_highlights)
+        num_errors = sum(sum(end-start for (start, end, _) in highlight)
+                         for highlight in self.label.word_highlights.values())
+        num_chars = len("".join(self.label.words))
+        elapsed = time() - self.time
+        return elapsed, num_words, num_words_with_errors, num_chars, num_errors
 
     def keyPressEvent(self, event):
         # modifiers = QtWidgets.QApplication.keyboardModifiers()
@@ -125,24 +170,25 @@ class InputWidget(QWidget):
                     if size is not None:
                         for _ in range(size - 1):
                             self.label.remove_last_char()
+                    else:
+                        self.label.add_char(" ")
                 self.label.remove_last_char()
 
-            self.updatePlaceholder()
+            self.update_placeholder()
 
         elif event.key() == Qt.Key_Space:
             if self.label.words and self.words_expected:
                 last_ind = len(self.label.words) - 1
                 real = self.label.words[last_ind]
-                if last_ind == len(self.words_expected):
-                    self.parent.onWin(self)
+                if last_ind >= len(self.words_expected) - 1:
+                    self.parent.on_finished_test(self)
+                    return
                 expected = self.words_expected[last_ind]
-                if real == expected:
-                    self.label.add_char(" ")
-                else:
+                if real != expected:
                     pref = InputWidget.common_prefix(real, expected)
                     self.label.add_char(expected[pref:])
-                    self.label.add_highlighting(HighlightedQLabel.HighlightColors.blank_color, pref)
-                    self.label.add_char(" ")
+                    self.label.add_highlighting("blank_color", pref)
+                self.label.add_char(" ")
         else:
             text = event.text()
             if text.isalnum() or text in set(r" !\"#$%&'()*+,-./:;=?@[\]^_`{|}~"):
@@ -153,8 +199,11 @@ class InputWidget(QWidget):
                 true = self.true_words[last_ind]
                 real_index = len(real) - 1
                 if len(real) > len(true) or real[real_index] != true[real_index]:
-                    self.label.add_or_extend_highlighting(HighlightedQLabel.HighlightColors.error_color)
-                self.updatePlaceholder()
+                    self.label.add_or_extend_highlighting("error_color")
+                self.update_placeholder()
 
         self.label.update_text()
-        self.label.move(QPoint(0, self.label.scroll_pos * self.line_height))
+        self.label.update()
+        self.is_cursor_active = True
+        self.update()
+        #self.label.move(QPoint(0, self.label.scroll_pos * self.line_height))

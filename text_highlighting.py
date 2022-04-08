@@ -1,21 +1,22 @@
 from collections import defaultdict
-from enum import IntEnum
 from html import escape
-from itertools import takewhile
 
-from PyQt5.QtCore import QPoint
 from PyQt5.QtWidgets import QLabel
 
-from .global_storage import GlobalStorage, raw
+from global_storage import GlobalStorage
 
 
 class HighlightedQLabel(QLabel):
-    class HighlightColors(IntEnum):
-        error_color = 0,
-        blank_color = 1
 
-    def __init__(self, exp_words, max_width, line_count, scroll_margin):
+    def __init__(self, parent, exp_words, max_width, line_count, scroll_margin):
         super().__init__()
+        self.parent = parent
+        self.colors = dict(
+            error_color=0,
+            blank_color=1
+        )
+        GlobalStorage.add_dict_listener(self.colors)
+        # self.colors = list(self.color_values.keys())
         self.word_highlights = defaultdict(lambda: [])
         self.words = []
         self.exp_words = exp_words
@@ -26,12 +27,6 @@ class HighlightedQLabel(QLabel):
         self.scroll_pos = 0
         self.cursor_pos = 0
         self.current_line = 0
-        self.formats = []
-        for i, name in enumerate(HighlightedQLabel.HighlightColors):
-            def update(value):
-                self.formats[i] = value
-            self.formats.append("")
-            GlobalStorage.add_listener(name.name, update)
 
     def add_new_word(self, word):
         self.words.append(word)
@@ -65,7 +60,7 @@ class HighlightedQLabel(QLabel):
             else:
                 self.words[-1] += text
 
-    def add_highlighting(self, color: HighlightColors, start_index=None, end_index=None, index=None):
+    def add_highlighting(self, color, start_index=None, end_index=None, index=None):
         if index is None:
             index = len(self.words) - 1
         if end_index is None:
@@ -74,7 +69,7 @@ class HighlightedQLabel(QLabel):
             start_index = len(self.words[-1]) - 1
         self.word_highlights[index].append((start_index, end_index, color))
 
-    def add_or_extend_highlighting(self, color: HighlightColors):
+    def add_or_extend_highlighting(self, color):
         word_index = len(self.words) - 1
         char_index = len(self.words[-1]) - 1
         for i, (st, end, cl) in enumerate(self.word_highlights[word_index]):
@@ -93,31 +88,36 @@ class HighlightedQLabel(QLabel):
         last_index = len(self.words) - 1
         if last_index in self.word_highlights:
             for (start, end, color) in self.word_highlights[last_index]:
-                if end == len(self.words[last_index]) and color == HighlightedQLabel.HighlightColors.blank_color:
+                if end == len(self.words[last_index]) and color == "blank_color":
                     return end - start
         return None
 
     def get_word_breaks(self):
-        result = [False] * len(self.exp_words)
+        result = []
+        space_size = int(int(GlobalStorage.get("input_font-size").rstrip("px")) * 0.25)
         string = ""
-        for i, word in enumerate(self.exp_words):
-            string += (" " if i > 0 else "") + word
-            if self.fontMetrics().boundingRect(string).width() > self.max_width:
+        i = 0
+        for word in self.exp_words:
+            string += word
+            if self.fontMetrics().boundingRect(string).width() + i * space_size > self.max_width:
                 string = word
-                result[i] = True
-            else:
-                result[i] = False
+                i = 0
+                word = "<br>" + word
+            i += 1
+            result.append(word)
         return result
 
     def update_text(self):
-        result = ""
+        space_size = int(int(GlobalStorage.get("input_font-size").rstrip("px")) * 0.25)
+        result = []
+        last_str = []
         breaks = self.get_word_breaks()
-        for i, word in enumerate(self.words):
-            result += " " * (i > 0)
-            result += "<br>" * breaks[i]
+        for i, (exp, word) in enumerate(zip(breaks, self.words)):
+            r = word
             if i in self.word_highlights:
                 last_end = 0
-                for j, highlight in enumerate(list(self.word_highlights[i])):
+                r = ""
+                for j, highlight in enumerate(self.word_highlights[i]):
                     start, end, color = highlight
                     if end > len(word):
                         if start >= len(word):
@@ -125,24 +125,26 @@ class HighlightedQLabel(QLabel):
                             continue
                         else:
                             self.word_highlights[i][j] = (start, min(end, len(word)), color)
-                    css = self.formats[color.value]
-                    result += word[last_end:start]
-                    result += f"<font style=\"{escape(css)}\">{escape(word[start:end])}</font>"
+                    r += word[last_end:start]
+                    r += f"<font color=\"{self.colors[color]}\">{escape(word[start:end])}</font>"
                     last_end = end
-                result += word[last_end:]
+                r += word[last_end:]
+            if exp.startswith("<br>"):
+                r = "<br>" + r
+                last_str = [word]
             else:
-                result += word
-        last_str = ""
-        for i in range(len(self.words)):
-            last_str += " " * (i > 0) + self.words[-1-i]
-            if breaks[len(self.words)-1-i]:
-                break
-        if last_str and last_str[-1] == " ":
-            last_str = last_str[:-1] + "t"
-        self.cursor_pos = self.fontMetrics().boundingRect(last_str).width()
-        self.current_line = sum(breaks[:len(self.words)])
-        if self.scroll_pos + self.current_line >= self.line_count - self.scroll_margin:
-            self.scroll_pos -= 1
-        if self.scroll_pos + self.current_line <= self.scroll_margin:
-            self.scroll_pos += 1
-        super().setText(result)
+                last_str.append(word)
+            result.append(r)
+        result = " ".join(result)
+        self.cursor_pos = max(0, len(last_str)-1) * space_size
+        last_str = "".join(last_str)
+        self.cursor_pos += self.fontMetrics().boundingRect(last_str).width()
+        line_pos = result.count("<br>")
+        if self.current_line != line_pos:
+            self.current_line = line_pos
+            if self.current_line - self.scroll_pos >= self.line_count - self.scroll_margin:
+                self.scroll_pos += 1
+            elif self.scroll_pos > 0 and self.current_line - self.scroll_pos <= self.scroll_margin:
+                self.scroll_pos -= 1
+            self.parent.update_placeholder()
+        super().setText("<br>".join(result.split("<br>")[self.scroll_pos:]))
