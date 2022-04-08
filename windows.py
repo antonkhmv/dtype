@@ -31,15 +31,15 @@ class MainMenu(QWidget):
         self.logo.setFixedSize(400, 70)
         GlobalStorage.add_stylesheet_listener(self.logo, ["primary_color", "logo_font-size"])
 
-        self.start = QPushButton("Start test")
+        self.start = QPushButton("Начать тест")
         # noinspection PyUnresolvedReferences
         self.start.clicked.connect(self.parent.on_enter_test_page)
         self.box.addWidget(self.start)
 
-        self.stat = QPushButton("Statistics")
+        self.stat = QPushButton("Статистика")
         self.box.addWidget(self.stat)
 
-        self.settings = QPushButton("Settings")
+        self.settings = QPushButton("Настройки")
         self.box.addWidget(self.settings)
 
         for button in [self.start, self.settings, self.stat]:
@@ -49,6 +49,12 @@ class MainMenu(QWidget):
         self.grid.addLayout(self.box, 0, 0, Qt.AlignCenter)
         self.setLayout(self.grid)
         self.show()
+
+    def keyPressEvent(self, a0) -> None:
+        if a0.key() == Qt.Key_1:
+            self.start.click()
+        elif a0.key() == Qt.Key_2:
+            self.stat.click()
 
     def showEvent(self, a0):
         self.move(self.parent.rect().center() - self.rect().center())
@@ -87,15 +93,16 @@ class Results(QWidget):
         self.box.addWidget(self.info)
         self.info.setFixedSize(400, 250)
 
-        GlobalStorage.add_stylesheet_listener(self.info, ["primary_color", "results_font-size"])
-        self.back = QPushButton("Назад в главное меню")
+        self.again = QPushButton("Начать сначала")
+        self.box.addWidget(self.again)
+        self.again.clicked.connect(self.parent.on_enter_test_page)
 
+        GlobalStorage.add_stylesheet_listener(self.info, ["primary_color", "results_font-size"])
+
+        self.back = QPushButton("Назад в главное меню")
         # noinspection PyUnresolvedReferences
         self.back.clicked.connect(self.parent.on_finished_results)
         self.box.addWidget(self.back)
-
-        self.again = QPushButton("Начать сначала")
-        self.box.addWidget(self.again)
 
         for button in [self.back, self.again]:
             GlobalStorage.add_stylesheet_listener(button, ["primary_color", "buttons_background-color"])
@@ -104,6 +111,12 @@ class Results(QWidget):
         self.grid.addLayout(self.box, 0, 0, Qt.AlignCenter)
         self.setLayout(self.grid)
         self.show()
+
+    def keyPressEvent(self, a0) -> None:
+        if a0.key() == Qt.Key_1:
+            self.again.click()
+        elif a0.key() == Qt.Key_2:
+            self.back.click()
 
     def showEvent(self, a0):
         self.move(self.parent.rect().center() - self.rect().center())

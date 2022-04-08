@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QStackedWidget
 
 from input_widget import InputWidget
 from windows import MainMenu, Results
+from mode import WordsMode, TimeMode
 
 
 class ContentView(QStackedWidget):
@@ -21,7 +22,8 @@ class ContentView(QStackedWidget):
         self.input = None
 
     def on_enter_test_page(self):
-        self.input = InputWidget(self, 600, true_words=None, line_count=6, scroll_margin=2)
+        # self.input = TimeMode(self, 1500, 600, line_count=6, scroll_margin=2)
+        self.input = WordsMode(self, 15, 600, line_count=6, scroll_margin=2)
         self.addWidget(self.input)
         self.setCurrentWidget(self.input)
 

@@ -2,24 +2,13 @@ import copy
 import itertools
 from time import time
 
-from PyQt5 import QtCore
 from PyQt5.Qt import Qt
 from PyQt5.QtCore import QTimer, QRect, QPoint
 from PyQt5.QtGui import QPainter, QPen, QPaintEvent, QShowEvent, QBrush, QColor
-from PyQt5.QtWidgets import QLabel, QWidget, QGridLayout, QVBoxLayout, QLayout
+from PyQt5.QtWidgets import QLabel, QWidget, QGridLayout, QLayout
 
-from text_highlighting import HighlightedQLabel
 from global_storage import GlobalStorage
-
-
-class InputWidgetWrapper(QWidget):
-    def __init__(self, parent, width, line_count, scroll_margin):
-        super().__init__(parent)
-        self.input = InputWidget(self, width, line_count, scroll_margin)
-        self.input.stackUnder(self)
-        layout = QGridLayout()
-        layout.addWidget(self.input)
-        self.setLayout(self.input.box)
+from text_highlighting import HighlightedQLabel
 
 
 class InputWidget(QWidget):
@@ -40,31 +29,15 @@ class InputWidget(QWidget):
 
         def update_params(font_size, cursor_color):
             font_size = int(font_size.rstrip("px"))
-            self.line_height = 1.2 * font_size
+            self.line_height = 1.17 * font_size
             self.font_size = font_size
             self.cursor_color = cursor_color
 
         GlobalStorage.add_listener(["input_font-size", "cursor_color"], update_params)
 
         self.true_words = true_words
-        self.true_words = "over the sunset at the edge of the atlas i'm driving alone when" \
-                          " i see in the distance a light in the dark" \
-                          " and when i approach it a note on the glass we're serving" \
-                          " inside it's quiet but the tables are shining with blue chrome" \
-                          " and white with a fan on above but no service in sight" \
-                          " i pick out a booth sliding in from the side".split()
-                          # " and then i back feeling quite tired so i know that i'll be here a little" \
-                          # " while when i go i'll get right back on the road" \
-                          # " let everybody come together the world at peace as one we could live a dream forever" \
-                          # " its really up to us and if you're not sure how to back then open up " \
-                          # " you heart let the feeling grow and soon you're sure to know light up light up" \
-                          # " the whole night sky with all your love just say the prayer we'll make it there if we" \
-                          # " work hard enough keep on keep on and give it everything you've got 'cos only then we'll" \
-                          # " reach the end the land where we belong so when we walk among the clouds hold your neighbor" \
-                          # " close as the trumpets echo round you don't wanna be a-".split()
 
         self.words_expected = copy.copy(self.true_words)
-
 
         # Widgets
         self.label = HighlightedQLabel(self, exp_words=self.words_expected, max_width=width, line_count=line_count,
@@ -79,19 +52,22 @@ class InputWidget(QWidget):
 
         GlobalStorage.add_stylesheet_listener(self.placeholder,
                                               ["placeholder_color", "input_font-size", "input_font-family"])
-
         # self.placeholder.setWordWrap(True)
         self.placeholder.setAlignment(Qt.AlignLeft)
-        self.resize(width, line_count * self.line_height + 18)
+        w, h = width + 10, line_count * self.line_height-5
+        self.resize(w, h)
         # Layout
         self.label_pos = self.label.pos()
         self.grid = QGridLayout()
         self.box = QGridLayout()
         self.box.setSizeConstraint(QLayout.SetFixedSize)
-        self.label.setFixedSize(width, line_count * self.line_height)
-        self.placeholder.setFixedSize(width, line_count * self.line_height)
-        self.box.addWidget(self.placeholder, 0, 0)
-        self.box.addWidget(self.label, 0, 0)
+        self.label.setFixedSize(w, h)
+        self.placeholder.setFixedSize(w, h)
+        self.stats = QLabel("")
+        self.stats.setFixedWidth(w)
+        self.box.addWidget(self.stats, 0, 0)
+        self.box.addWidget(self.placeholder, 1, 0)
+        self.box.addWidget(self.label, 1, 0)
         self.grid.addLayout(self.box, 0, 0, Qt.AlignCenter)
         self.setLayout(self.grid)
         self.show()
@@ -105,15 +81,10 @@ class InputWidget(QWidget):
         # noinspection PyUnresolvedReferences
         self.cursor_timer.timeout.connect(update_cursor)
         self.cursor_timer.start(300)
+        self.time = 0
 
-        def update_stats():
-            pass
-
-        self.stats_update = QTimer(self)
-        # noinspection PyUnresolvedReferences
-        self.stats_update.timeout.connect(update_stats)
-        self.stats_update.start(100)
-        self.time = time()
+    def start_timer(self):
+        self.label_pos = self.label.pos()
 
     def paintEvent(self, a0: QPaintEvent) -> None:
         pt = QPainter(self)

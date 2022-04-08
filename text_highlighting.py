@@ -2,7 +2,7 @@ from collections import defaultdict
 from html import escape
 
 from PyQt5.QtWidgets import QLabel
-import sys
+
 from global_storage import GlobalStorage
 
 
@@ -36,10 +36,12 @@ class HighlightedQLabel(QLabel):
         #     return int(int(GlobalStorage.get("input_font-size").rstrip("px")) * 0.27)
 
     def add_new_word(self, word):
+        if len(self.words) == 0:
+            self.parent.start_timer()
         self.words.append(word)
 
     def remove_word(self):
-        if not self.words:
+        if len(self.words) <= 1:
             return
         self.remove_highlighting()
         self.words.pop()
