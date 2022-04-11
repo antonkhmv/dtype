@@ -2,37 +2,44 @@ from collections import defaultdict
 from typing import Callable, Any, List
 
 
-# def raw(val: str, suffix: str = "", index=0):
-#     return val.split(";")[index].split()[-1].rstrip(suffix)
+class StylesheetStorage:
 
-
-class GlobalStorage:
     __data = {
         # General
-        "primary_color": "#FFFFFF",
+        # "button_color": "#323232",
+        "button_background-color": "#a9a9a9",
+        "transparent_background-color": "rgba(0,0,0,0)",
+        "primary_color": "white",
         "secondary_color": "#323232",
         "placeholder_color": "#808080",
         "input_font-family": "Arial",
-        "buttons_background-color": "#a9a9a9",
 
         # InputWidget
+        "header_color": "#242424",
+        "cell_color": "#2a2a2a",
+        "stats_color": "#b0b0b0",
         "cursor_color": "#a9a9a9",
         "error_color": "#ff3333",
         "blank_color": "#bf9494",
         "input_font-size": "30px",
-        "logo_font-size": "50px",
-        "results_font-size": "20px"
+
+        # Immutable
+        "logo_font-size": "60px",
+        "back_button_font-size": "40px",
+        "button_font-size": "30px",
+        "results_font-size": "20px",
+        "stats_font-size": "20px",
+        "radio_button_font-size": "16px",
     }
 
     __listeners = defaultdict(list)
-    __stylesheet_styles = defaultdict(list)
 
     @classmethod
     def add_listener(cls, styles: List[str], callback: Callable):
         for attr in styles:
             if attr not in cls.__data:
                 raise ValueError(f"No key: {attr} in __data")
-            cls.__listeners[attr].append(callback)
+            cls.__listeners[attr].append((callback, styles))
         callback(*(cls.__data[attr] for attr in styles))
 
     @classmethod
@@ -40,7 +47,7 @@ class GlobalStorage:
         assert hasattr(obj, 'setStyleSheet')
 
         def update_attr(*values):
-            style = " ".join([f"{name.partition('_')[2]}: {value};" for name, value in zip(styles, values)])
+            style = " ".join([f"{name.rpartition('_')[2]}: {value};" for name, value in zip(styles, values)])
             getattr(obj, 'setStyleSheet')(style)
 
         cls.add_listener(styles, update_attr)
@@ -56,18 +63,12 @@ class GlobalStorage:
         cls.add_listener(styles, update_attr)
 
     @classmethod
-    def remove_listener(cls, attr: str, callback: Callable[[Any], Any]):
-        if attr not in cls.__data:
-            raise ValueError(f"No key: {attr} in __data")
-        cls.__listeners[attr].remove(callback)
-
-    @classmethod
     def change(cls, attr, value):
         if attr not in cls.__data:
             raise ValueError(f"No key: {attr} in __data")
         cls.__data[attr] = value
-        for callback in cls.__listeners[attr]:
-            callback(value)
+        for (callback, styles) in cls.__listeners[attr]:
+            callback(*(cls.__data[attr] for attr in styles))
 
     @classmethod
     def get(cls, attr):

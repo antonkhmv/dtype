@@ -4,11 +4,11 @@ from time import time
 
 from PyQt5.Qt import Qt
 from PyQt5.QtCore import QTimer, QRect, QPoint
-from PyQt5.QtGui import QPainter, QPen, QPaintEvent, QShowEvent, QBrush, QColor
-from PyQt5.QtWidgets import QLabel, QWidget, QGridLayout, QLayout
+from PyQt5.QtGui import QPainter, QPen, QPaintEvent, QShowEvent, QBrush, QColor, QFont
+from PyQt5.QtWidgets import QLabel, QWidget, QGridLayout, QLayout, QPushButton, QHBoxLayout
 
-from global_storage import GlobalStorage
-from text_highlighting import HighlightedQLabel
+from utils.stylesheet_storage import StylesheetStorage
+from utils.text_highlighting import HighlightedQLabel
 
 
 class InputWidget(QWidget):
@@ -25,7 +25,7 @@ class InputWidget(QWidget):
             self.setPalette(p)
             self.setAutoFillBackground(True)
 
-        GlobalStorage.add_listener(["secondary_color"], update_background)
+        StylesheetStorage.add_listener(["secondary_color"], update_background)
 
         def update_params(font_size, cursor_color):
             font_size = int(font_size.rstrip("px"))
@@ -33,7 +33,7 @@ class InputWidget(QWidget):
             self.font_size = font_size
             self.cursor_color = cursor_color
 
-        GlobalStorage.add_listener(["input_font-size", "cursor_color"], update_params)
+        StylesheetStorage.add_listener(["input_font-size", "cursor_color"], update_params)
 
         self.true_words = true_words
 
@@ -43,18 +43,18 @@ class InputWidget(QWidget):
         self.label = HighlightedQLabel(self, exp_words=self.words_expected, max_width=width, line_count=line_count,
                                        scroll_margin=scroll_margin)
 
-        GlobalStorage.add_stylesheet_listener(self.label, ["input_font-size", "primary_color", "input_font-family"])
+        StylesheetStorage.add_stylesheet_listener(self.label, ["input_font-size", "primary_color", "input_font-family"])
         self.label.setAlignment(Qt.AlignLeft)
 
         # Overlay
         self.placeholder = QLabel(text=" ".join(self.words_expected))
         self.placeholder.lineWidth()
 
-        GlobalStorage.add_stylesheet_listener(self.placeholder,
-                                              ["placeholder_color", "input_font-size", "input_font-family"])
+        StylesheetStorage.add_stylesheet_listener(self.placeholder,
+                                                  ["placeholder_color", "input_font-size", "input_font-family"])
         # self.placeholder.setWordWrap(True)
         self.placeholder.setAlignment(Qt.AlignLeft)
-        w, h = width + 10, line_count * self.line_height-5
+        w, h = width + 10, line_count * self.line_height - 5
         self.resize(w, h)
         # Layout
         self.label_pos = self.label.pos()
@@ -63,6 +63,34 @@ class InputWidget(QWidget):
         self.box.setSizeConstraint(QLayout.SetFixedSize)
         self.label.setFixedSize(w, h)
         self.placeholder.setFixedSize(w, h)
+
+        def update_button(placeholder_color, primary_color, font_size, input_fs):
+            self.setStyleSheet(
+                f"""
+                QPushButton {{
+                    background-color: rgba(0, 0, 0, 0);
+                    font-weight: bold;
+                    font-size: {font_size};
+                    color: {placeholder_color};  
+                }}
+                QPushButton:hover {{
+                    color: {primary_color};  
+                }}
+                """
+            )
+
+        self.back = QPushButton("↩")
+        StylesheetStorage.add_listener(
+            ["placeholder_color", "primary_color", "back_button_font-size", "input_font-size"],
+            update_button)
+        # self.restart = QPushButton("↻")
+        # self.restart.setObjectName("restart")
+        # StylesheetStorage.add_stylesheet_listener(self.back,
+        #           ["placeholder_color", "transparent_background-color", "input_font-size"])
+
+        self.box.addWidget(self.back, 2, 0, Qt.AlignCenter)
+        self.back.clicked.connect(self.parent.on_leave_test)
+
         self.stats = QLabel("")
         self.stats.setFixedWidth(w)
         self.box.addWidget(self.stats, 0, 0)
@@ -70,7 +98,6 @@ class InputWidget(QWidget):
         self.box.addWidget(self.label, 1, 0)
         self.grid.addLayout(self.box, 0, 0, Qt.AlignCenter)
         self.setLayout(self.grid)
-        self.show()
 
         def update_cursor():
             self.is_cursor_active = (self.is_cursor_active + 1) % 5
@@ -96,16 +123,18 @@ class InputWidget(QWidget):
         pt.setPen(pen)
         # pt.setBackgroundMode(Qt.BGMode.OpaqueMode)
         pt.setBackground(QColor(self.cursor_color))
-        tm, lm = self.label_pos.y() + self.line_height/10, self.label_pos.x()-2
+        tm, lm = self.label_pos.y() + self.line_height * 0.1, self.label_pos.x() - 2
         label = self.label
         if self.is_cursor_active < 3:
-            pt.drawRect(QRect(QPoint(label.cursor_pos + lm, (label.current_line-label.scroll_pos) * self.line_height + tm),
-                              QPoint(label.cursor_pos + lm + 1,
-                                     (label.current_line-label.scroll_pos) * self.line_height + self.font_size + tm)))
+            pt.drawRect(
+                QRect(QPoint(label.cursor_pos + lm, (label.current_line - label.scroll_pos) * self.line_height + tm),
+                      QPoint(label.cursor_pos + lm + 1,
+                             (label.current_line - label.scroll_pos) * self.line_height + self.font_size + tm)))
 
     def showEvent(self, a0: QShowEvent) -> None:
         self.update_placeholder()
         self.label_pos = self.label.pos()
+        self.back.clearFocus()
         # self.parent.resizeEvent(None)
 
     @staticmethod
@@ -125,7 +154,7 @@ class InputWidget(QWidget):
     def get_metrics(self):
         num_words = len(self.label.words)
         num_words_with_errors = len(list(filter(lambda x: len(x) > 0, self.label.word_highlights.values())))
-        num_errors = sum(sum(end-start for (start, end, _) in highlight)
+        num_errors = sum(sum(end - start for (start, end, _) in highlight)
                          for highlight in self.label.word_highlights.values())
         num_chars = len(" ".join(self.label.words))
         elapsed = time() - self.time
@@ -167,6 +196,9 @@ class InputWidget(QWidget):
                     self.label.add_char(expected[pref:])
                     self.label.add_highlighting("blank_color", pref)
                 self.label.add_char(" ")
+        elif event.key() == Qt.Key_Tab:
+            if self.back.hasFocus():
+                self.back.clearFocus()
         else:
             text = event.text()
             if text.isalnum() or text in set(r" !\"#$%&'()*+,-./:;=?@[\]^_`{|}~"):

@@ -3,7 +3,11 @@ from html import escape
 
 from PyQt5.QtWidgets import QLabel
 
-from global_storage import GlobalStorage
+from utils.stylesheet_storage import StylesheetStorage
+
+
+def get_space_length():
+    return int(int(StylesheetStorage.get("input_font-size").rstrip("px")) * 0.27)
 
 
 class HighlightedQLabel(QLabel):
@@ -15,7 +19,7 @@ class HighlightedQLabel(QLabel):
             error_color=0,
             blank_color=1
         )
-        GlobalStorage.add_dict_listener(self.colors)
+        StylesheetStorage.add_dict_listener(self.colors)
         # self.colors = list(self.color_values.keys())
         self.word_highlights = defaultdict(lambda: [])
         self.words = []
@@ -27,13 +31,6 @@ class HighlightedQLabel(QLabel):
         self.scroll_pos = 0
         self.cursor_pos = 0
         self.current_line = 0
-
-    def get_space_length(self):
-        return int(int(GlobalStorage.get("input_font-size").rstrip("px")) * 0.27)
-        # if sys.platform == 'win32':
-        #     return int(int(GlobalStorage.get("input_font-size").rstrip("px")) * 0.27)
-        # elif sys.platform == 'darwin':
-        #     return int(int(GlobalStorage.get("input_font-size").rstrip("px")) * 0.27)
 
     def add_new_word(self, word):
         if len(self.words) == 0:
@@ -103,7 +100,7 @@ class HighlightedQLabel(QLabel):
 
     def get_word_breaks(self):
         result = []
-        space_size = self.get_space_length()
+        space_size = get_space_length()
         string = ""
         i = 0
         for word in self.exp_words:
@@ -117,13 +114,12 @@ class HighlightedQLabel(QLabel):
         return result
 
     def update_text(self):
-        # странная проблема с длиной пробела - всего 1 px вместо 7
-        space_size = self.get_space_length()
+        space_size = get_space_length()
         result = []
         last_str = []
         breaks = self.get_word_breaks()
         for i, (exp, word) in enumerate(zip(breaks, self.words)):
-            r = word
+            r = escape(word, quote=False)
             if i in self.word_highlights:
                 last_end = 0
                 r = ""
@@ -135,10 +131,10 @@ class HighlightedQLabel(QLabel):
                             continue
                         else:
                             self.word_highlights[i][j] = (start, min(end, len(word)), color)
-                    r += escape(word[last_end:start])
-                    r += f"<font color=\"{self.colors[color]}\">{escape(word[start:end])}</font>"
+                    r += escape(word[last_end:start], quote=False)
+                    r += f"<font color=\"{self.colors[color]}\">{escape(word[start:end], quote=False)}</font>"
                     last_end = end
-                r += escape(word[last_end:])
+                r += escape(word[last_end:], quote=False)
             if exp.startswith("<br>"):
                 r = "<br>" + r
                 last_str = [word]
@@ -157,4 +153,4 @@ class HighlightedQLabel(QLabel):
             elif self.scroll_pos > 0 and self.current_line - self.scroll_pos <= self.scroll_margin:
                 self.scroll_pos -= 1
             self.parent.update_placeholder()
-        super().setText("<br>".join(result.split("<br>")[self.scroll_pos:]))
+        super().setText("<br>".join(result.split("<br>")[self.scroll_pos:self.scroll_pos+self.line_count]))
