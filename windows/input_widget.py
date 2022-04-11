@@ -17,7 +17,6 @@ class InputWidget(QWidget):
         self.parent = parent
         self.line_height = 0
         self.font_size = None
-        self.cursor_color = None
 
         def update_background(value):
             p = self.palette()

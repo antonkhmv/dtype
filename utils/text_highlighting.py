@@ -25,7 +25,6 @@ class HighlightedQLabel(QLabel):
         self.words = []
         self.exp_words = exp_words
         self.max_width = max_width
-        self.real_text = ""
         self.line_count = line_count
         self.scroll_margin = scroll_margin
         self.scroll_pos = 0
