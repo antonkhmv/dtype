@@ -46,6 +46,6 @@ class DBManager:
         if mode == 'W':
             suffix = f" AND NUM_WORDS = {params}"
         elif mode == 'T':
-            suffix = f" AND CAST(ELAPSED as INTEGER) = {params}"
+            suffix = f" AND ROUND(ELAPSED) = {params}"
         return list(self.cursor.execute(f"SELECT * from tests where MODE = '{mode}' AND LANG = '{lang}'" + suffix))
         # self.connection.commit()
