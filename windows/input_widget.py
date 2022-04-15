@@ -200,7 +200,7 @@ class InputWidget(QWidget):
                 self.back.clearFocus()
         else:
             text = event.text()
-            if text.isalnum() or text in set(r" !\"#$%&'()*+,-./:;=?@[\]^_`{|}~"):
+            if text.isalnum() or text in set(r" !\"#$%&'()*+,-./:;=?@[\]^_`{|}~<>"):
                 self.label.add_char(text)
                 # self.label.remove_highlighting()
                 last_ind = len(self.label.words) - 1

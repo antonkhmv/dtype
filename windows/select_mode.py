@@ -10,7 +10,7 @@ class SelectMode(WindowTemplate):
         super(SelectMode, self).__init__(parent)
 
         self.back = QPushButton("Назад")
-        self.back.clicked.connect(lambda: self.parent.setCurrentWidget(self.parent.main_menu))
+        self.back.clicked.connect(self.parent.on_leave_select_mode)
         self.mode = QLabel("Выбор режима")
         self.box.addWidget(self.mode, Qt.AlignCenter)
         self.mode.setFixedSize(400, 50)

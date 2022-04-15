@@ -85,61 +85,27 @@ class DataView(QWidget):
         self.back = QPushButton("Назад")
         self.back.setFixedHeight(40)
         StylesheetStorage.add_stylesheet_listener(self.back,
-                                                  ["secondary_color", "button_background-color", "radio_button_font-size"])
+                                                  ["secondary_color", "button_background-color",
+                                                   "radio_button_font-size"])
         self.back.clicked.connect(lambda: self.parent.setCurrentWidget(self.parent.main_menu))
 
         self.submit = QPushButton("Применить")
         self.submit.setFixedHeight(40)
         StylesheetStorage.add_stylesheet_listener(self.submit,
-                                                  ["secondary_color", "button_background-color", "radio_button_font-size"])
+                                                  ["secondary_color", "button_background-color",
+                                                   "radio_button_font-size"])
         self.submit.clicked.connect(self.load_data)
+
         sidebar.addWidget(self.submit, Qt.AlignCenter)
         sidebar.addWidget(self.back, Qt.AlignCenter)
-        sidebar_w = QWidget()
-        sidebar_w.setLayout(sidebar)
 
+        self.sidebar_w = QWidget()
+        self.sidebar_w.setLayout(sidebar)
+        self.splitter = QSplitter(Qt.Horizontal)
+        self.splitter.addWidget(self.sidebar_w)
         self.table = QTableWidget(50, 8, self)
         self.table.setHorizontalHeaderLabels(
             ["Дата", "Язык", "Режим", "Параметр", "Скорость", "Точность", "Время", "Число символов"])
-        # for i in range(7):
-        #     self.table.setColumnWidth(i, 100)
-
-        self.splitter = QSplitter(Qt.Horizontal)
-
-        # splitter.addWidget(self.right_widget)
-        self.splitter.addWidget(sidebar_w)
-
-        def update_background(background_color, table_color, header_color, primary_color):
-            p = self.palette()
-            p.setColor(self.backgroundRole(), QColor(background_color))
-            self.setPalette(p)
-            self.setAutoFillBackground(True)
-
-            p = self.table.palette()
-            p.setColor(QPalette.Base, QColor(table_color))
-            self.table.setPalette(p)
-            self.table.setAutoFillBackground(True)
-
-            self.table.setStyleSheet(f"""
-            QHeaderView::section {{
-             font-size: 14px;
-             background-color: {header_color};
-             color: {primary_color};
-            }}
-            QTableView QTableCornerButton::section {{
-             font-size: 14px;
-             background-color: {header_color};
-             color: {primary_color};
-             }}    
-             QTableWidget::item  {{
-             font-size: 14px;
-             color: {primary_color};
-             }}            
-            """)
-
-
-        StylesheetStorage.add_listener(["secondary_color", "cell_color", "header_color", "primary_color"], update_background)
-
         self.splitter.addWidget(self.table)
 
         for i in range(self.table.rowCount()):
@@ -160,15 +126,45 @@ class DataView(QWidget):
         self.splitter.setStretchFactor(0, 0)
         self.splitter.setStretchFactor(1, 1)
 
+        def update_background(background_color, table_color, header_color, primary_color):
+            p = self.palette()
+            p.setColor(self.backgroundRole(), QColor(background_color))
+            self.setPalette(p)
+            self.setAutoFillBackground(True)
+
+            p = self.table.palette()
+            p.setColor(QPalette.Base, QColor(table_color))
+            self.table.setPalette(p)
+            self.table.setAutoFillBackground(True)
+
+            self.table.setStyleSheet(f"""
+                QHeaderView::section {{
+                 font-size: 14px;
+                 background-color: {header_color};
+                 color: {primary_color};
+                }}
+                QTableView QTableCornerButton::section {{
+                 font-size: 14px;
+                 background-color: {header_color};
+                 color: {primary_color};
+                 }}    
+                 QTableWidget::item  {{
+                 font-size: 14px;
+                 color: {primary_color};
+                 }}            
+            """)
+
+        self.box.addWidget(self.splitter, 0, 0)
+
+        StylesheetStorage.add_listener(["secondary_color", "cell_color", "header_color", "primary_color"],
+                                       update_background)
+
         def update_splitter(cell_color):
             self.splitter.setStyleSheet(f"QSplitter::handle {{ background: {cell_color}; }}")
 
-        StylesheetStorage.add_listener(["placeholder_color"], update_splitter)
-
-        self.box.addWidget(self.splitter, 0, 0)
+        StylesheetStorage.add_listener(["secondary_color"], update_splitter)
         self.box.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self.box)
-
 
     def load_data(self):
         names = {
@@ -187,6 +183,7 @@ class DataView(QWidget):
             selected.append(item)
         lang, mode, param = selected + [int(self.param_group.checkedButton().text())]
         rows = self.parent.db.get_query(mode, lang, param)
+
         self.table.setRowCount(max(self.table.rowCount(), len(rows)))
 
         for i in range(self.table.rowCount()):

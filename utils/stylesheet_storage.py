@@ -7,23 +7,26 @@ class StylesheetStorage:
     __data = {
         # General
         # "button_color": "#323232",
-        "button_background-color": "#a9a9a9",
+        "input_font-family": "Arial",
         "transparent_background-color": "rgba(0,0,0,0)",
+
+        "button_background-color": "#a9a9a9",
         "primary_color": "white",
         "secondary_color": "#323232",
         "placeholder_color": "#808080",
-        "input_font-family": "Arial",
 
         # InputWidget
-        "header_color": "#242424",
-        "cell_color": "#2a2a2a",
-        "stats_color": "#b0b0b0",
         "cursor_color": "#a9a9a9",
         "error_color": "#ff3333",
         "blank_color": "#bf9494",
-        "input_font-size": "30px",
+
+        "header_color": "#242424",
+        "cell_color": "#2a2a2a",
+        "stats_color": "#b0b0b0",
 
         # Immutable
+        "input_font-size": "30px",
+
         "logo_font-size": "60px",
         "back_button_font-size": "40px",
         "button_font-size": "30px",

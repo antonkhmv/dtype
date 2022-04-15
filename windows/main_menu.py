@@ -27,6 +27,8 @@ class MainMenu(WindowTemplate):
         self.stat.clicked.connect(self.parent.on_enter_stats)
 
         self.settings = QPushButton("Настройки")
+        # noinspection PyUnresolvedReferences
+        self.settings.clicked.connect(self.parent.on_enter_settings)
 
         self.key_map = {
             Qt.Key_1: self.start,

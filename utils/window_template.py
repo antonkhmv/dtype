@@ -1,6 +1,6 @@
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLayout, QLabel, QPushButton, QGridLayout
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLayout, QGridLayout
 
 from utils.stylesheet_storage import StylesheetStorage
 
@@ -15,6 +15,7 @@ class WindowTemplate(QWidget):
             p.setColor(self.backgroundRole(), QColor(value))
             self.setPalette(p)
             self.setAutoFillBackground(True)
+            self.update()
 
         StylesheetStorage.add_listener(["secondary_color"], update_background)
 
