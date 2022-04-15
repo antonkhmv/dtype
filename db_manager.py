@@ -47,8 +47,10 @@ class DBManager:
         elif isinstance(test_page, QuoteMode):
             mode = 'Q'
         lang = dict(russian='RUS', english='ENG')[test_page.lang]
-        query = f"INSERT INTO tests(TIMESTAMP, ELAPSED, NUM_CHARS, NUM_CHAR_ERRORS, NUM_WORDS, NUM_WORD_ERRORS, LANG, MODE)" \
-                f" VALUES (CURRENT_TIMESTAMP, {elapsed:.2f}, {num_chars}, {num_char_errors}, {num_words}, {num_word_errors}, '{lang}', '{mode}')"
+        query = f"INSERT INTO " \
+                f"tests(TIMESTAMP, ELAPSED, NUM_CHARS, NUM_CHAR_ERRORS, NUM_WORDS, NUM_WORD_ERRORS, LANG, MODE)" \
+                f" VALUES (datetime('now', 'localtime'), {elapsed:.2f}, {num_chars}, {num_char_errors}, {num_words}," \
+                f" {num_word_errors}, '{lang}', '{mode}')"
         try:
             self.cursor.execute(query)
             self.connection.commit()
